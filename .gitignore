@@ -102,3 +102,7 @@ ENV/
 .DS_Store
 
 /rnn/tuning/
+
+/rnn/runs/
+
+/rnn/all_scalars.json

@@ -151,6 +151,7 @@ def main():
     logging.getLogger().setLevel("INFO" if args.verbose else "WARNING")
     logging.info("Training for {} epochs".format(args.num_epochs))
 
+    train_steps = 0
     epoch_iterable = tqdm(range(args.num_epochs), desc="Epochs") if args.verbose else range(args.num_epochs)
     for epoch in epoch_iterable:
         batch_iterable = tqdm(train_loader, desc="Batches", leave=False) if args.verbose else train_loader
@@ -167,14 +168,17 @@ def main():
             hidden = (h0, c0)
             outputs, _ = rnn(data, hidden)
             loss = loss_function(outputs, targets)
-            # if args.summary:
-            #     writer.add_scalar('model/loss', loss.data[0], batch_index)
+            if args.summary:
+                writer.add_scalar('model/loss', loss.data[0], train_steps)
             losses.append(loss.data[0])
             predictions = outputs.data.max(dim=1)[1]
-            accuracy = (predictions == targets.data).sum() / len(targets)
-            accuracies.append(accuracy * 100)
+            accuracy = (predictions == targets.data).sum() / len(targets) * 100
+            if args.summary:
+                writer.add_scalar('model/accuracy', accuracy, train_steps)
+            accuracies.append(accuracy)
             loss.backward()
             optimizer.step()
+            train_steps = train_steps + 1
     if args.summary:
         writer.export_scalars_to_json("./all_scalars.json")
         writer.close()
