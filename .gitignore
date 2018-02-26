@@ -106,3 +106,4 @@ ENV/
 /rnn/runs/
 
 /rnn/all_scalars.json
+.vscode/settings.json

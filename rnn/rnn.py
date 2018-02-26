@@ -3,6 +3,7 @@
 
 import argparse
 import csv
+import logging
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -14,7 +15,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
-import logging
 
 from utils import normal_init, pad_sequences
 
@@ -111,6 +111,14 @@ class SimpleRNN(nn.Module):
         for w in self.parameters():
             w.data = normal_init(w.data.size())
 
+    @property
+    def dropout(self):
+        return self.rnn.dropout
+
+    @dropout.setter
+    def dropout(self, value):
+        self.rnn.dropout = value
+
     def forward(self, inp, hidden=None):
         x = inp
         # x = self.inp(x)
@@ -153,9 +161,9 @@ def main():
 
     train_steps = 0
     epoch_iterable = tqdm(range(args.num_epochs), desc="Epochs") if args.verbose else range(args.num_epochs)
-    for epoch in epoch_iterable:
+    for _ in epoch_iterable:
         batch_iterable = tqdm(train_loader, desc="Batches", leave=False) if args.verbose else train_loader
-        for batch_index, (data, targets, lengths) in enumerate(batch_iterable):
+        for _, (data, targets, lengths) in enumerate(batch_iterable):
             sorted_indices = sorted(range(len(lengths)), key=lambda k: lengths[k], reverse=True)
             data = torch.nn.utils.rnn.pack_padded_sequence(
                 Variable(data[torch.LongTensor(sorted_indices)].float()),
@@ -184,7 +192,7 @@ def main():
         writer.close()
     if args.verbose:
         logging.info("Number of train steps: {}".format(len(losses)))
-        f, (ax1, ax2) = plt.subplots(2, 1)
+        _, (ax1, ax2) = plt.subplots(2, 1)
         ax1.plot(accuracies)
         ax1.set_title("Accuracy")
         ax2.plot(losses)
@@ -217,7 +225,7 @@ def main():
         y_pred = pd.Series(predictions.numpy(), name="Predicted")
         confusion_matrix = pd.crosstab(y_actual, y_pred)
 
-        f, ax = plt.subplots(figsize=(11, 9))
+        plt.subplots(figsize=(11, 9))
         sns.heatmap(confusion_matrix, square=True, annot=True)
         plt.show()
     else:
